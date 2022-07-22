@@ -1,0 +1,14 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: registry
+  namespace: default
+spec:
+  ports:
+    - name: registry
+      protocol: TCP
+      port: 5000
+      targetPort: registry
+  type: ClusterIP
+  selector:
+    app: registry

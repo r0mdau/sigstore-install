@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sign-job
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: cosign
+          # Built from ci on 2022-03-15
+          image: gcr.io/projectsigstore/cosign:v1.8.0
+          args: ["sign", "--fulcio-url", "http://fulcio-server.fulcio-system.svc", "--allow-insecure-registry", "--rekor-url", "http://rekor-server.rekor-system.svc", "--force", "ghcr.io/sigstore/scaffolding/checktree@sha256:9ca3cf4d20eb4f6c85929cd873234150d746e69dbb7850914bbd85b97eba1e2f"]
+          env:
+            - name: COSIGN_EXPERIMENTAL
+              value: "true"
+            - name: SIGSTORE_CT_LOG_PUBLIC_KEY_FILE
+              value: "/var/run/sigstore-root/rootfile.pem"
+            - name: COSIGN_REPOSITORY
+              value: "registry.default.svc:5000/sigstore"
+          volumeMounts:
+            - name: oidc-info
+              mountPath: /var/run/sigstore/cosign
+            - name: keys
+              mountPath: "/var/run/sigstore-root"
+              readOnly: true
+      volumes:
+        - name: oidc-info
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: oidc-token
+                  expirationSeconds: 600
+                  audience: sigstore
+        - name: keys
+          secret:
+            secretName: ctlog-public-key
+            items:
+              - key: public
+                path: rootfile.pem

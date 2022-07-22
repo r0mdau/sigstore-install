@@ -90,3 +90,82 @@ This chart is going to create 4 namespaces:
 * fulcio-system
 * rekor-system
 * trillian-system
+
+### Deployment verifications
+
+Copy secrets into the `default` namespace
+
+```
+kubectl -n ctlog-system get secrets ctlog-public-key -o yaml | sed 's/namespace: .*/namespace: default/' | kubectl apply -f -
+
+kubectl -n fulcio-system get secrets fulcio-server-secret -oyaml | sed -e 's/namespace: .*/namespace: default/' -e 's/name: .*/name: fulcio-secret/' | kubectl apply -f -
+```
+
+Deploy a Docker registry in minikube, with a self-signed certificate
+
+```
+kubectl create -f verify/certificate-registry.yml
+
+kubectl create -f verify/service-registry.yml
+
+kubectl create -f verify/deploy-registry.yml
+```
+
+Create a `Job` to sign an already available image using Fulcio certificates, the produced signature will be stored in the registry we just deployed, due to the `COSIGN_REPOSITORY` environment variable
+
+```
+kubectl create -f verify/job-sign.yml
+```
+
+Look the logs of the running container to confirm that the image is successfully signed, sample output
+
+```
+$ kubectl logs sign-job-fdtmj
+
+Generating ephemeral keys...
+Retrieving signed certificate...
+**Warning** Using a non-standard public key for verifying SCT: /var/run/sigstore-root/rootfile.pem
+Successfully verified SCT...
+tlog entry created with index: 0
+Pushing signature to: sigstore
+```
+
+Cosign has requested a certificate from Fulcio, signed the image and stored the entry in Rekor.
+
+Now verify the signed content with Cosign. `Job` example
+
+```
+kubectl apply -f verify/job-verify.yml
+```
+
+Again, look at the pod logs to confirm that the job worked
+
+```
+$ kubectl logs verify-job-zb9jj
+
+Verification for ghcr.io/sigstore/scaffolding/checktree@sha256:9ca3cf4d20eb4f6c85929cd873234150d746e69dbb7850914bbd85b97eba1e2f --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - The claims were present in the transparency log
+  - The signatures were integrated into the transparency log when the certificate was valid
+  - Any certificates were verified against the Fulcio roots.
+...
+```
+
+We can also retrieve the record by querying Rekor API, it is another for of validation
+
+```
+curl -s --cacert <(kubectl get secrets -n rekor-system rekor-tls -o jsonpath='{ .data.tls\.crt }' | base64 -d) https://rekor.$(minikube ip).nip.io/api/v1/log/entries?logIndex=0 | jq -r
+```
+
+Query to inspect the public key
+
+```
+curl -s --cacert <(kubectl get secrets -n rekor-system rekor-tls -o jsonpath='{ .data.tls\.crt }' | base64 -d) https://rekor.$(minikube ip).nip.io/api/v1/log/entries?logIndex=0 | jq -r '.[keys_unsorted[0]].body' | base64 -d | jq -r '.spec.signature.publicKey.content' | base64 -d | openssl x509 -noout -text
+```
+
+We can observe in the `Subject Alternative Name` the values associated with our identity token from the Fulcio OIDC.
+
+Kudos, you have a working Sigstore architecture working in minikube. Next stop is to deploy it on production clusters.
+
+The [scaffolding Sigstore project](https://github.com/sigstore/scaffolding/) contains many useful resources.
