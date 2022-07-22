@@ -1,3 +1,4 @@
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -11,7 +12,16 @@ spec:
         - name: cosign
           # Built from ci on 2022-03-15
           image: gcr.io/projectsigstore/cosign:v1.8.0
-          args: ["sign", "--fulcio-url", "http://fulcio-server.fulcio-system.svc", "--allow-insecure-registry", "--rekor-url", "http://rekor-server.rekor-system.svc", "--force", "ghcr.io/sigstore/scaffolding/checktree@sha256:9ca3cf4d20eb4f6c85929cd873234150d746e69dbb7850914bbd85b97eba1e2f"]
+          args: [
+            "sign",
+            "--fulcio-url",
+            "http://fulcio-server.fulcio-system.svc",
+            "--allow-insecure-registry",
+            "--rekor-url",
+            "http://rekor-server.rekor-system.svc",
+            "--force",
+            "ghcr.io/sigstore/scaffolding/checktree@sha256:9ca3cf4d20eb4f6c85929cd873234150d746e69dbb7850914bbd85b97eba1e2f"
+          ]
           env:
             - name: COSIGN_EXPERIMENTAL
               value: "true"
