@@ -5,6 +5,29 @@ My notes to install sigstore components on a local environment (minikube).
 
 Credits to [Andrew Block](https://github.com/sabre1041), his article [Scaffolding Sigstore](https://medium.com/sigstore/scaffolding-sigstore-e893eb962f22) that is the base and contains more detailed explanations.
 
+## Why Sigstore ?
+
+Do you trust every package you download when running commands like:
+
+```
+npm install
+yarn install
+mvn install
+go get -v ./...
+composer install
+dotnet restore
+docker build / docker pull
+etc...
+```
+
+And if you don't trust them, do you have the time to open the `vendor | node_modules ...` folder to scrutinize each line of code ?
+
+We often respond no and no to those questions, or you have the means to develop everything in the house like big techs or government are able to do.
+
+For most cases, cryptographically signing artifacts and publishing those signatures to a public database is one way to allow everybody to verify that the artifact they download comes from a source you trust.
+
+The sigstore project helps you automate signing artifacts and, on the other hand, verify signatures.
+
 ## Getting started
 
 Architecture overview
@@ -156,7 +179,7 @@ The following checks were performed on each of these signatures:
 ...
 ```
 
-We can also retrieve the record by querying Rekor API, it is another for of validation
+We can also retrieve the record by querying Rekor API, it is another form of validation
 
 ```
 curl -s --cacert <(kubectl get secrets -n rekor-system rekor-tls -o jsonpath='{ .data.tls\.crt }' | base64 -d) https://rekor.$(minikube ip).nip.io/api/v1/log/entries?logIndex=0 | jq -r
@@ -170,7 +193,7 @@ curl -s --cacert <(kubectl get secrets -n rekor-system rekor-tls -o jsonpath='{ 
 
 We can observe in the `Subject Alternative Name` the values associated with our identity token from the Fulcio OIDC.
 
-Kudos, you have a working Sigstore architecture working in minikube. Next stop is to deploy it on production clusters.
+Kudos \o/ you have a working Sigstore architecture working in minikube. Next stop is to deploy it on production clusters.
 
 The [scaffolding Sigstore project](https://github.com/sigstore/scaffolding/) contains many useful resources.
 
