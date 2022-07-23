@@ -7,6 +7,10 @@ Credits to [Andrew Block](https://github.com/sabre1041), his article [Scaffoldin
 
 ## Getting started
 
+Architecture overview
+
+![arch overview](img/alt_landscapelayout_overview.svg)
+
 ### Local tools
 
 * minikube
@@ -169,3 +173,8 @@ We can observe in the `Subject Alternative Name` the values associated with our 
 Kudos, you have a working Sigstore architecture working in minikube. Next stop is to deploy it on production clusters.
 
 The [scaffolding Sigstore project](https://github.com/sigstore/scaffolding/) contains many useful resources.
+
+## Further reading
+
+* Sigstore.dev - [How it works](https://www.sigstore.dev/how-it-works)
+* SLSA.dev - [Supply chain threats](https://slsa.dev/spec/v0.1/index)
